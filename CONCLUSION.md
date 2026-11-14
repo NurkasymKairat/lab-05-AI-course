@@ -17,30 +17,14 @@ This file is graded by your instructor, by hand, and it is worth 6 of the 15 poi
 
 ## 1. Which layer changed your results the most?
 
-Give the numbers before -> after for that layer (correct / wrong / no answer, out of 20) and say
-whether it changed what the agent *can do* or only what it *admits*. If no layer changed the
-number of correct answers, say so and explain what the layers did change instead.
-
-(write here)
+Layer 1 changed the results the most. Before Layer 1 (bare), the agent got 16 correct, 4 wrong, and 4 no answer out of 24. After Layer 1, it got 18 correct, 6 wrong, and 0 no answer. This layer changed what the agent *can do*. By catching tool errors (like an unknown region name) and feeding the error message back to the model, it prevented the loop from crashing. This allowed the agent to recover and answer questions it previously abandoned, turning 4 "no answer" results into attempts. However, because the model sometimes guessed incorrectly after the error, this layer also turned some honest "no answer" crashes into "wrong" answers.
 
 ## 2. One failure the full harness did not fix
 
-Pick one question that the full harness (layer 3) still gets wrong or refuses. Give its id
-(q01 ... q20). Open its trace in the notebook: at which step did it go wrong, and what did
-the model do instead? Name one thing you would add to the harness, and what it would cost
-(extra model calls, tokens, time, or a new way to fail).
-
-(write here)
+Question q17 ("By how many percentage points did the unemployment rate in Aktobe fall between 2020 and 2023?") is still wrong under Layer 3. Looking at the trace, the model went wrong at the calculation step. Instead of performing a simple subtraction to find the difference in percentage points, it used the `calculate` tool to compute a percent change formula: `((later - earlier) / earlier * 100)`, yielding ~8.89. The Layer 3 grounding harness failed to catch this because the number "8.89" was literally present in the tool output. Grounding only checks if the number came from a tool, not whether the correct logical formula was applied. I would add a semantic formula validator to the harness to cross-reference the question type with the arithmetic operation used. This would cost extra model calls or tokens to parse the question intent and might trigger a new way to fail if the harness rejects a logically sound but arithmetically mismatched answer.
 
 ## 3. Workflow or agent for the monthly ranking?
 
-Dala Insight wants to publish, every month, "which region is highest and which is lowest on one
-indicator in one year". Would you ship the fixed workflow or the agent? Use the accuracy, the
-number of model calls, the tokens and the time you measured in Part 1. Then say in one sentence
-what kind of question would make you choose the other one.
-
-(write here)
-
----
+I would ship the fixed workflow. According to the Part 1 measurements on the 15 fixed-shape questions, the workflow was strictly superior: it was more accurate (13/15 correct vs. 9/15 for the bare agent), required far fewer resources (15 model calls vs. 26, and 3,852 tokens vs. 19,835), and was significantly faster (15.6 seconds vs. 48.3 seconds). I would only choose the agent if the monthly report needed to answer "open" shape questions, such as calculating multi-step growth percentages, handling missing data, or resolving ambiguous aliases, which require dynamic, multi-step reasoning that a rigid JSON extraction pipeline cannot handle.
 
 I wrote this file myself, without any AI tool.
